@@ -1,14 +1,16 @@
 package fr.antonins;
 
-import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpHandler;
-import com.sun.net.httpserver.HttpServer;
-import org.apache.hc.client5.http.classic.HttpClient;
-import org.apache.hc.client5.http.classic.methods.HttpPost;
-import org.apache.hc.client5.http.impl.classic.HttpClients;
-import se.michaelthelin.spotify.SpotifyApi;
 
-import javax.security.auth.callback.CallbackHandler;
+
+import org.apache.http.HttpHeaders;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
+import org.json.JSONObject;
+import se.michaelthelin.spotify.SpotifyApi;
 import java.awt.*;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -16,12 +18,16 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.concurrent.CountDownLatch;
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpServer;
 
 import static fr.antonins.Credentials.*;
 
 public class Spotify {
 
 	private static final CountDownLatch latch = new CountDownLatch(1);
+	public static String authorizationCode;
 	static SpotifyApi spotifyApi = new SpotifyApi.Builder()
 			.setClientId(CLIENT_ID)
 			.setClientSecret(CLIENT_SECRET)
@@ -42,7 +48,7 @@ public class Spotify {
 
 		// Créez et démarrez un serveur HTTP pour gérer la redirection
 		HttpServer server = HttpServer.create(new InetSocketAddress(8080), 0);
-		server.createContext("/callback", new CallbackHandler());
+		server.createContext("/callback", new CallbackHandler(latch));
 		server.start();
 
 		// Attendez jusqu'à ce que le code d'autorisation soit récupéré
@@ -76,7 +82,6 @@ public class Spotify {
 			// Envoyez la requête POST et récupérez la réponse
 			HttpResponse response = httpClient.execute(httpPost);
 			String responseJson = EntityUtils.toString(response.getEntity());
-			System.out.println(responseJson);
 
 			// Après avoir obtenu la réponse JSON contenant l'access token
 			JSONObject jsonResponse = new JSONObject(responseJson);
@@ -85,7 +90,6 @@ public class Spotify {
 			String accessToken = jsonResponse.getString("access_token");
 
 			// Affiche l'access token
-			System.out.println("Access Token: " + accessToken);
 			spotifyApi.setAccessToken(accessToken);
 
 
@@ -95,29 +99,10 @@ public class Spotify {
 
 	}
 
-	static class CallbackHandler implements HttpHandler {
-		@Override
-		public void handle(HttpExchange exchange) throws IOException {
-			String query = exchange.getRequestURI().getQuery();
-			String[] queryParams = query.split("&");
-			for (String param : queryParams) {
-				String[] keyValue = param.split("=");
-				if (keyValue.length == 2 && keyValue[0].equals("code")) {
-					authorizationCode = keyValue[1];
-					break;
-				}
-			}
+	public static void getNbPlaylist() {
+		spotifyApi.getPlaylist("6WKFe2uQo4SblWVPsGMDYL");
 
-			System.out.println("Authorization code: " + authorizationCode);
-
-			String response = "Authorization code received. You can close this window now.";
-			exchange.sendResponseHeaders(200, response.length());
-			exchange.getResponseBody().write(response.getBytes());
-			exchange.getResponseBody().close();
-
-			// Signal que le code d'autorisation a été récupéré
-			latch.countDown();
-		}
+		System.out.println("Nombre de playlists");
 	}
 
 }
