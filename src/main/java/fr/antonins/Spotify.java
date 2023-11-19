@@ -2,6 +2,7 @@ package fr.antonins;
 
 
 
+import org.apache.hc.core5.http.ParseException;
 import org.apache.http.HttpHeaders;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -18,9 +19,12 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.concurrent.CountDownLatch;
-import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpHandler;
+
 import com.sun.net.httpserver.HttpServer;
+import se.michaelthelin.spotify.exceptions.SpotifyWebApiException;
+import se.michaelthelin.spotify.model_objects.specification.Playlist;
+import se.michaelthelin.spotify.requests.IRequest;
+import se.michaelthelin.spotify.requests.data.playlists.GetPlaylistRequest;
 
 import static fr.antonins.Credentials.*;
 
@@ -99,10 +103,10 @@ public class Spotify {
 
 	}
 
-	public static void getNbPlaylist() {
-		spotifyApi.getPlaylist("6WKFe2uQo4SblWVPsGMDYL");
+	public static void getNbPlaylist() throws IOException, ParseException, SpotifyWebApiException {
+		IRequest.Builder<Playlist, GetPlaylistRequest.Builder> playlist = spotifyApi.getPlaylist("6WKFe2uQo4SblWVPsGMDYL");
 
-		System.out.println("Nombre de playlists");
+		System.out.println("Playlist : " + playlist.build().getJson());
 	}
 
 }
